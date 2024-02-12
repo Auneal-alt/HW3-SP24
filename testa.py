@@ -1,0 +1,109 @@
+# this file was to test adding in the doolittleMethod after I made the file that ran the cholesky method
+import math
+from DoolittleMethod import LUFactorization, BackSolve, Doolittle
+import GaussSeidel as GS
+
+
+def symmetry(A):
+
+    transpose_A = [[row[i] for row in A] for i in range(len(A[0]))]
+    return A == transpose_A
+
+
+# Used chat gpt to help figure out how to do xtransposeAx>0
+def positivedefinite(A):
+    """Check if a matrix is positive definite"""
+    n = len(A)
+    for i in range(n):
+        for j in range(i, n):
+            A[i][j] = A[i][j] + A[j][i]
+    for i in range(n):
+        det = 1
+        for j in range(i):
+            det *= A[i - 1][j]
+        if det <= 0:
+            return False
+    return True
+
+
+# I followed the equations in the book felt almost easier to solve on paper before trying to do any code
+def CholeskyMethod(A, b):
+    """Solve the matrix using Cholesky method if it is symmetrical and positive definite"""
+
+    n = len(A)
+    L = [[0] * n for _ in range(n)]
+
+    # Fill the lower triangle of L
+    for i in range(n):
+        s = 0  # Initialize s to 0
+        for j in range(i):
+            s += L[i][j] * L[i][j]
+        L[i][i] = math.sqrt(max(A[i][i] - s, 0))
+
+        for j in range(i + 1, n):
+            s = sum(L[j][k] * L[i][k] for k in range(i))
+            L[j][i] = (A[j][i] - s) / L[i][i]
+
+    # Solve the lower triangle
+    y = [0] * n
+    for i in range(n):
+        y[i] = b[i][0]  # Extract the values from the column vector
+        for j in range(i):
+            y[i] -= L[i][j] * y[j]
+        y[i] = y[i] / L[i][i]
+
+    # Solve the upper triangle
+    x = [0] * n
+    for i in range(n - 1, -1, -1):
+        x[i] = y[i]
+        for j in range(i + 1, n):
+            x[i] -= L[j][i] * x[j]
+        x[i] = x[i] / L[i][i]
+
+    return x, y
+
+
+def main():
+    """Main function to solve Cholesky Method"""
+
+    # Problem 1
+    A1 = [[1, -1, 3, 2], [-1, 5, -5, -2], [3, -5, 19, 3], [2, -2, 3, 21]]
+    b1 = [[15], [-35], [94], [1]]
+    Aaug1 = [[1, -1, 3, 2, 15], [-1, 5, -5, -2, -35], [3, -5, 19, 3, 94], [2, -2, 3, 21, 1]]
+
+    resultsym1 = symmetry(A1)
+    print("result of symmetry test 1 is:", resultsym1)
+
+    resultposdef1 = positivedefinite(A1)
+    print("result of positivedefinite test 1 is:", resultposdef1)
+
+    if resultsym1 and resultposdef1:
+        MatrixSoln1, y1 = CholeskyMethod(A1, b1)
+    else:
+        print("Switching to Doolittle method for Problem 1.")
+    aug = [[1, -1, 3, 2, 15], [-1, 5, -5, -2, -35], [3, -5, 19, 3, 94], [2, -2, 3, 21, 1]]
+    L, U = LUFactorization(A1)
+    b = GS.matrixMult(L, U)
+    y = BackSolve(L, b, UT=False)
+    x = BackSolve(U, y, UT=True)
+    print("Solution x:", x)
+
+    # Problem 2
+    A2 = [[4, 2, 4, 0], [2, 2, 3, 2], [4, 3, 6, 3], [0, 2, 3, 9]]
+    b2 = [[20], [36], [60], [122]]
+
+    resultsym2 = symmetry(A2)
+    print("result of symmetry test 2 is:", resultsym2)
+
+    resultposdef2 = positivedefinite(A2)
+    print("result of positive definite test 2 is:", resultposdef2)
+
+    MatrixSoln2, y2 = CholeskyMethod(A2, b2)
+
+    print("x2 =")
+    for i in range(len(MatrixSoln2)):
+        print(MatrixSoln2[i])
+
+
+if __name__ == "__main__":
+    main()
